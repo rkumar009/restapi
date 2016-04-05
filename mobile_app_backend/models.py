@@ -9,8 +9,7 @@ class UserProfile(models.Model):
     mobileNo = models.CharField(primary_key=True,max_length=10, blank=False, unique=True)
     currentCity = models.CharField(max_length=100, blank=True)
     currentCompany = models.CharField(max_length=100, blank=True)
-    currentCompany = models.CharField(max_length=100, blank=True)
-    userPassword=models.CharField(max_length=100, blank=True)
+    userPassword=models.CharField(max_length=100, blank=False)
     userSessionId=models.CharField(max_length=100, blank=True)
 
 class UserAdmin(admin.ModelAdmin):

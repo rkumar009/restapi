@@ -104,7 +104,6 @@ def searchUserByMobileNo(request):
     for user in alluser:
         if (getattr(currentUser, UserProfile.mobileNo)==mobileNo):
             currentUser=user
-
     if(currentUser!=None):
         return HttpResponse(json.dumps({"success":True, "user":currentUser}),
         content_type='application/json')
