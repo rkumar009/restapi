@@ -21,3 +21,17 @@ class UserAdmin(admin.ModelAdmin):
         return obj.UserProfile.mobileNo
 
 admin.site.register(UserProfile,UserAdmin)
+
+class UserContactNumbers(models.Model):
+    contactName=models.CharField(max_length=50, blank=False)
+    mobileNo = models.CharField(primary_key=True,max_length=10, blank=False, unique=True)
+
+class UserContactNumberAdmin(admin.ModelAdmin):
+    list_display = ('contactName', 'mobsileNo')
+    search_fields = ['userName', 'mobileNo']
+    def userName(self,obj):
+        return obj.UserProfile.userName
+    def mobileNo(self,obj):
+        return obj.UserProfile.mobileNo
+
+admin.site.register(UserContactNumbers,UserContactNumberAdmin)

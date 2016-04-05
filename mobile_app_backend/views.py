@@ -1,18 +1,10 @@
-import datetime
-from django.contrib.sites import requests
+
 from django.http import HttpResponse
-from django.shortcuts import render
-import requests
-import base64
-import sys
+
 import json
-from django import forms
-import xml.etree.ElementTree as ET
-from django.contrib.auth.models import User
-
 from django.views.decorators.csrf import csrf_exempt
+from mobile_app_backend.models import UserProfile, UserContactNumbers
 
-from mobile_app_backend.models import UserProfile
 
 # --- this api create a new userprofile-------------------
 @csrf_exempt
@@ -28,20 +20,20 @@ def CreatUser(request):
     newUser= UserProfile(userName=userName, emailID=emailID, mobileNo=mobileNo, currentCity=currentCity, currentCompany=currentCompany)
     newUser.save()
 
-    return HttpResponse(json.dumps({"response":"","sessionId":"sessionId"}), content_type='application/json')
+    return HttpResponse(json.dumps({"response":"success","sessionId":"sessionId"}), content_type='application/json')
 
 # --- this api take user mobile no, password and sessionId and allow user to login into app------------
 @csrf_exempt
 def UserLogin(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
     userPassword = json.loads(request.body.decode('utf-8'))['userPassword']
-    sessionId=json.loads(request.body.decode('utf-8'))['sessionId']
-    alluser=UserProfile.objects.all();
-    currentUser=alluser.get(mobileNo=mobileNo)
-    userPassword1=getattr(currentUser, UserProfile.userPassword)
-    userSessionId = getattr(currentUser,UserProfile.userSessionId)
-
-    if(userPassword==userPassword1 & sessionId == userSessionId):
+    # sessionId=json.loads(request.body.decode('utf-8'))['sessionId']
+    try:
+        currentUser = UserProfile.objects.get(pk=mobileNo)
+    except UserProfile.DoesNotExist:
+        currentUser = None
+    if(currentUser):
+        print (currentUser.userName)
         return HttpResponse(json.dumps({"response":"login-success"}), content_type='application/json')
     else:
         return HttpResponse(json.dumps({"response": "login-failed"}), content_type='application/json')
@@ -51,7 +43,7 @@ def UserLogin(request):
 @csrf_exempt
 def UpdateUserProfile(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
-    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
     userName = json.loads(request.body.decode('utf-8'))['userName']
     emailID = json.loads(request.body.decode('utf-8'))['emailId']
     currentCity = json.loads(request.body.decode('utf-8'))['currentCity']
@@ -68,24 +60,27 @@ def UpdateUserProfile(request):
 @csrf_exempt
 def getUserDetails(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
-    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+    try:
+        currentUser = UserProfile.objects.get(pk=mobileNo)
+    except UserProfile.DoesNotExist:
+        currentUser = None
+    if(currentUser):
 
-    alluser = UserProfile.objects.all();
-    currentUser = alluser.get(mobileNo=mobileNo)
-    userName = getattr(currentUser, UserProfile.userName)
-    emailID = getattr(currentUser, UserProfile.emailID)
-    currentCity = getattr(currentUser, UserProfile.currentCity)
-    currentCompany = getattr(currentUser, UserProfile.currentCompany)
-    userPassword = getattr(currentUser, UserProfile.userPassword)
-
-    return HttpResponse(json.dumps({"success":True, "user-details":{"userName":userName,"emailId":emailID,"currentCity":currentCity,"currentCompany":currentCompany}}),
+        userName = currentUser.userName
+        emailID = currentUser.emailID
+        currentCity = currentUser.currentCity
+        currentCompany = currentUser.currentCompany
+        userPassword = currentUser.userPassword
+        return HttpResponse(json.dumps({"success":True, "user-details":{"userName":userName,"emailId":emailID,"currentCity":currentCity,"currentCompany":currentCompany}}),
         content_type='application/json')
+    else:
+        return HttpResponse(json.dumps({"failed": True, "user-details": "Null"}), content_type='application/json')
 
 @csrf_exempt
 def searchUserByName(request):
     seachName = json.loads(request.body.decode('utf-8'))['name']
     sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-
     alluser = UserProfile.objects.all();
     currentUser=[]
     for user in alluser:
@@ -93,21 +88,50 @@ def searchUserByName(request):
             currentUser.append(user)
     return HttpResponse(json.dumps({"success":True, "user-list":currentUser}),
         content_type='application/json')
+
 #  bonuse requrement ----------------------
 
 @csrf_exempt
 def searchUserByMobileNo(request):
-    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNo']
-    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-    alluser = UserProfile.objects.all();
-    currentUser=None
-    for user in alluser:
-        if (getattr(currentUser, UserProfile.mobileNo)==mobileNo):
-            currentUser=user
-    if(currentUser!=None):
-        return HttpResponse(json.dumps({"success":True, "user":currentUser}),
-        content_type='application/json')
+    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
+    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+
+    try:
+        currentUser = UserProfile.objects.get(pk=mobileNo)
+    except UserProfile.DoesNotExist:
+        currentUser = None
+    if(currentUser):
+        try:
+            contact = UserContactNumbers.objects.get(pk=mobileNo)
+        except UserProfile.DoesNotExist:
+            contact = None
+            if(contact):
+                userName = contact.contactName
+            else:
+                userName=currentUser.userName
+
+        return HttpResponse(json.dumps({"success": True, "user-details": {"userName": userName}}),content_type='application/json')
     else:
-        return HttpResponse(json.dumps({"success": False, "user": "null"}),
-                            content_type='application/json')
+        return HttpResponse(json.dumps({"failed": True, "user-details":"Null"}),content_type='application/json')
+
+@csrf_exempt
+def makeMobileNumberSpam(request):
+    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
+    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+
+    try:
+        currentUser = UserProfile.objects.get(pk=mobileNo)
+    except UserProfile.DoesNotExist:
+        currentUser = None
+    if(currentUser):
+        userName = currentUser.userName
+        emailID = currentUser.emailID
+        currentCity = currentUser.currentCity
+        currentCompany = currentUser.currentCompany
+        userPassword = currentUser.userPassword
+        return HttpResponse(json.dumps({"success": True, "user-details": {"userName": userName, "emailId": emailID,
+                                                                      "currentCity": currentCity,
+                                                                      "currentCompany": currentCompany}}),content_type='application/json')
+    else:
+        return HttpResponse(json.dumps({"failed": True, "user-details":"Null"}),content_type='application/json')
 
