@@ -111,20 +111,3 @@ def searchUserByMobileNo(request):
         return HttpResponse(json.dumps({"success": False, "user": "null"}),
                             content_type='application/json')
 
-@csrf_exempt
-def markMobileNoSpam(request):
-    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNo']
-    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-    alluser = UserProfile.objects.all();
-    currentUser=None
-    for user in alluser:
-        if (getattr(currentUser, UserProfile.mobileNo)==mobileNo):
-            currentUser=user
-
-    if(currentUser!=None):
-
-        return HttpResponse(json.dumps({"success":True, "user":currentUser}),
-        content_type='application/json')
-    else:
-        return HttpResponse(json.dumps({"success": False, "user": "null"}),
-                            content_type='application/json')

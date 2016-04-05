@@ -13,9 +13,11 @@ class UserProfile(models.Model):
     userSessionId=models.CharField(max_length=100, blank=True)
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('userName','','creationTime')
+    list_display = ('userName', 'mobileNo')
     search_fields = ['userName', 'mobileNo']
     def userName(self,obj):
         return obj.UserProfile.userName
     def mobileNo(self,obj):
         return obj.UserProfile.mobileNo
+
+admin.site.register(UserProfile,UserAdmin)
