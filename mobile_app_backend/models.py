@@ -27,11 +27,27 @@ class UserContactNumbers(models.Model):
     mobileNo = models.CharField(primary_key=True,max_length=10, blank=False, unique=True)
 
 class UserContactNumberAdmin(admin.ModelAdmin):
-    list_display = ('contactName', 'mobsileNo')
-    search_fields = ['userName', 'mobileNo']
+    list_display = ('contactName', 'mobileNo')
+    search_fields = ['contactName', 'mobileNo']
     def userName(self,obj):
         return obj.UserProfile.userName
     def mobileNo(self,obj):
         return obj.UserProfile.mobileNo
 
 admin.site.register(UserContactNumbers,UserContactNumberAdmin)
+
+class SpamList(models.Model):
+    contactname=models.CharField(max_length=50, blank=False)
+    contactNumber = models.CharField(primary_key=True,max_length=10, blank=False, unique=True)
+    spamCount=models.IntegerField(blank=True,default=0)
+    spamStatus=models.CharField(max_length=10, default="Normal")
+
+class SpamListAdmin(admin.ModelAdmin):
+    list_display = ('contactname', 'contactNumber')
+    search_fields = ['contactNumber', 'contactNumber']
+    def contactname(self,obj):
+        return obj.SpamList.contactname
+    def contactNumber(self,obj):
+        return obj.SpamList.contactNumber
+
+admin.site.register(SpamList,SpamListAdmin)

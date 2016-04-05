@@ -3,7 +3,7 @@ from django.http import HttpResponse
 
 import json
 from django.views.decorators.csrf import csrf_exempt
-from mobile_app_backend.models import UserProfile, UserContactNumbers
+from mobile_app_backend.models import UserProfile, UserContactNumbers, SpamList
 
 
 # --- this api create a new userprofile-------------------
@@ -17,26 +17,35 @@ def CreatUser(request):
     userPassword=json.loads(request.body.decode('utf-8'))['userPassword']
 
     # -------- create session id and pass into the object of userprofile----------You have to do----
-    newUser= UserProfile(userName=userName, emailID=emailID, mobileNo=mobileNo, currentCity=currentCity, currentCompany=currentCompany)
-    newUser.save()
 
-    return HttpResponse(json.dumps({"response":"success","sessionId":"sessionId"}), content_type='application/json')
+    try:
+        currentUser = UserProfile.objects.get(pk=mobileNo)
+    except UserProfile.DoesNotExist:
+        currentUser = None
+    if (currentUser):
+        return HttpResponse(json.dumps({"response":"failed","message":"User Already Exit"}), content_type='application/json')
+    else:
+        newUser= UserProfile(userName=userName, emailID=emailID, mobileNo=mobileNo, currentCity=currentCity, currentCompany=currentCompany)
+        newUser.save()
+        return HttpResponse(json.dumps({"response":"success","sessionId":"sessionId"}), content_type='application/json')
 
 # --- this api take user mobile no, password and sessionId and allow user to login into app------------
 @csrf_exempt
 def UserLogin(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
-    userPassword = json.loads(request.body.decode('utf-8'))['userPassword']
+    userpassword = json.loads(request.body.decode('utf-8'))['userPassword']
     # sessionId=json.loads(request.body.decode('utf-8'))['sessionId']
     try:
         currentUser = UserProfile.objects.get(pk=mobileNo)
     except UserProfile.DoesNotExist:
         currentUser = None
     if(currentUser):
-        print (currentUser.userName)
-        return HttpResponse(json.dumps({"response":"login-success"}), content_type='application/json')
+        if(currentUser.userPassword==userpassword):
+            return HttpResponse(json.dumps({"response":"login-success"}), content_type='application/json')
+        else:
+            return HttpResponse(json.dumps({"response": "login-failed"}), content_type='application/json')
     else:
-        return HttpResponse(json.dumps({"response": "login-failed"}), content_type='application/json')
+        return HttpResponse(json.dumps({"response": "user does not exist"}), content_type='application/json')
 
 # this api is used to update user profile----------------
 
@@ -49,7 +58,6 @@ def UpdateUserProfile(request):
     currentCity = json.loads(request.body.decode('utf-8'))['currentCity']
     currentCompany = json.loads(request.body.decode('utf-8'))['currentCompany']
     userPassword = json.loads(request.body.decode('utf-8'))['userPassword']
-
     UserProfile.objects.filter(mobileNo=mobileNo).update(userName=userName,emailID=emailID,currentCity=currentCity,currentCompany=currentCompany,userPassword=userPassword)
 
     # return "profile-update-success" if user profile is updated successfully------------------------------
@@ -66,27 +74,30 @@ def getUserDetails(request):
     except UserProfile.DoesNotExist:
         currentUser = None
     if(currentUser):
-
         userName = currentUser.userName
         emailID = currentUser.emailID
         currentCity = currentUser.currentCity
         currentCompany = currentUser.currentCompany
         userPassword = currentUser.userPassword
-        return HttpResponse(json.dumps({"success":True, "user-details":{"userName":userName,"emailId":emailID,"currentCity":currentCity,"currentCompany":currentCompany}}),
+        return HttpResponse(json.dumps({"response":"Success", "user-details":{"userName":userName,"emailId":emailID,"currentCity":currentCity,"currentCompany":currentCompany}}),
         content_type='application/json')
     else:
-        return HttpResponse(json.dumps({"failed": True, "user-details": "Null"}), content_type='application/json')
+        return HttpResponse(json.dumps({"response": "Failed", "user-details": "Null"}), content_type='application/json')
 
 @csrf_exempt
 def searchUserByName(request):
     seachName = json.loads(request.body.decode('utf-8'))['name']
-    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-    alluser = UserProfile.objects.all();
-    currentUser=[]
-    for user in alluser:
-        if getattr(user, UserProfile.userName)==seachName:
-            currentUser.append(user)
-    return HttpResponse(json.dumps({"success":True, "user-list":currentUser}),
+    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+
+    sameNameUsers=UserProfile.objects.filter(userName=seachName)
+    users=[]
+    for user in sameNameUsers:
+        response_data = {}
+        response_data['name'] = user.userName
+        response_data['mobileNo'] = user.mobileNo
+        users.append(response_data)
+
+    return HttpResponse(json.dumps({"success":True, "user-list":users}),
         content_type='application/json')
 
 #  bonuse requrement ----------------------
@@ -95,7 +106,6 @@ def searchUserByName(request):
 def searchUserByMobileNo(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
     # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-
     try:
         currentUser = UserProfile.objects.get(pk=mobileNo)
     except UserProfile.DoesNotExist:
@@ -105,33 +115,54 @@ def searchUserByMobileNo(request):
             contact = UserContactNumbers.objects.get(pk=mobileNo)
         except UserProfile.DoesNotExist:
             contact = None
-            if(contact):
-                userName = contact.contactName
-            else:
-                userName=currentUser.userName
-
-        return HttpResponse(json.dumps({"success": True, "user-details": {"userName": userName}}),content_type='application/json')
+        if(contact):
+            name = contact.contactName
+        else:
+            name=currentUser.userName
+        return HttpResponse(json.dumps({"success": True, "user-details": {"userName": name}}),content_type='application/json')
     else:
         return HttpResponse(json.dumps({"failed": True, "user-details":"Null"}),content_type='application/json')
 
 @csrf_exempt
 def makeMobileNumberSpam(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
-    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-
+    userName = json.loads(request.body.decode('utf-8'))['userName']
     try:
-        currentUser = UserProfile.objects.get(pk=mobileNo)
-    except UserProfile.DoesNotExist:
-        currentUser = None
-    if(currentUser):
-        userName = currentUser.userName
-        emailID = currentUser.emailID
-        currentCity = currentUser.currentCity
-        currentCompany = currentUser.currentCompany
-        userPassword = currentUser.userPassword
-        return HttpResponse(json.dumps({"success": True, "user-details": {"userName": userName, "emailId": emailID,
-                                                                      "currentCity": currentCity,
-                                                                      "currentCompany": currentCompany}}),content_type='application/json')
+        spamuser = SpamList.objects.get(pk=mobileNo)
+    except SpamList.DoesNotExist:
+        spamuser = None
+    if(spamuser):
+        spamcount=spamuser.spamCount
+        print(spamcount)
+        spamcount=spamcount+1
+        if(spamcount<10):
+            spamstatus="Normal"
+        elif (spamcount>10 & spamcount<50):
+            spamstatus = "Low Level"
+        elif(spamcount>50 & spamcount<200):
+            spamstatus = "Medium Level"
+        else:
+            spamstatus = "High Level"
+        print (spamstatus)
+        SpamList.objects.filter(contactNumber=mobileNo).update(spamCount=spamcount,spamStatus=spamstatus)
+        return HttpResponse(json.dumps({"success": True}), content_type='application/json')
     else:
-        return HttpResponse(json.dumps({"failed": True, "user-details":"Null"}),content_type='application/json')
+        newspamuser=SpamList(contactname=userName, contactNumber=mobileNo,spamCount=1)
+        newspamuser.save()
+        return HttpResponse(json.dumps({"success": True}),content_type='application/json')
 
+@csrf_exempt
+def isSapm(request):
+    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
+    print (mobileNo)
+    # sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+    try:
+        spamuser = SpamList.objects.get(pk=mobileNo)
+    except SpamList.DoesNotExist:
+        spamuser = None
+    if(spamuser):
+        print (spamuser.spamStatus)
+        spamstatus=spamuser.spamStatus
+        return HttpResponse(json.dumps({"spam": True,"status":spamstatus}),content_type='application/json')
+    else:
+        return HttpResponse(json.dumps({"spam": False}),content_type='application/json')

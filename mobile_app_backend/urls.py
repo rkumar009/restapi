@@ -10,6 +10,8 @@ urlpatterns = [
     url(r'^UpdateUserProfile', views.UpdateUserProfile, name="UpdateUserProfile"),
     url(r'^getUserDetails', views.getUserDetails, name="getUserDetails"),
     url(r'^searchUserByName', views.searchUserByName, name="searchUserByName"),
-    url(r'^searchUserByMobileNo', views.searchUserByMobileNo, name="searchUserByMobileNo")
+    url(r'^searchUserByMobileNo', views.searchUserByMobileNo, name="searchUserByMobileNo"),
+    url(r'^makeMobileNumberSpam', views.makeMobileNumberSpam, name="makeMobileNumberSpam"),
+    url(r'^isSapm', views.isSapm, name="isSapm")
 
 ]
