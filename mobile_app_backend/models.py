@@ -6,7 +6,7 @@ from django.db import models
 class UserProfile(models.Model):
     userName=models.CharField(max_length=50, blank=False)
     emailID=models.CharField(max_length=50, blank=False, unique=True)
-    mobileNo = models.CharField(max_length=10, blank=False, unique=True)
+    mobileNo = models.CharField(primary_key=True,max_length=10, blank=False, unique=True)
     currentCity = models.CharField(max_length=100, blank=True)
     currentCompany = models.CharField(max_length=100, blank=True)
     currentCompany = models.CharField(max_length=100, blank=True)

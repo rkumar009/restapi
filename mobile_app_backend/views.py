@@ -36,7 +36,6 @@ def UserLogin(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
     userPassword = json.loads(request.body.decode('utf-8'))['userPassword']
     sessionId=json.loads(request.body.decode('utf-8'))['sessionId']
-
     alluser=UserProfile.objects.all();
     currentUser=alluser.get(mobileNo=mobileNo)
     userPassword1=getattr(currentUser, UserProfile.userPassword)
@@ -53,7 +52,6 @@ def UserLogin(request):
 def UpdateUserProfile(request):
     mobileNo = json.loads(request.body.decode('utf-8'))['mobileNumber']
     sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
-
     userName = json.loads(request.body.decode('utf-8'))['userName']
     emailID = json.loads(request.body.decode('utf-8'))['emailId']
     currentCity = json.loads(request.body.decode('utf-8'))['currentCity']
@@ -74,26 +72,60 @@ def getUserDetails(request):
 
     alluser = UserProfile.objects.all();
     currentUser = alluser.get(mobileNo=mobileNo)
-
     userName = getattr(currentUser, UserProfile.userName)
     emailID = getattr(currentUser, UserProfile.emailID)
     currentCity = getattr(currentUser, UserProfile.currentCity)
     currentCompany = getattr(currentUser, UserProfile.currentCompany)
     userPassword = getattr(currentUser, UserProfile.userPassword)
 
-
     return HttpResponse(json.dumps({"success":True, "user-details":{"userName":userName,"emailId":emailID,"currentCity":currentCity,"currentCompany":currentCompany}}),
         content_type='application/json')
 
 @csrf_exempt
-def searchUser(request):
+def searchUserByName(request):
     seachName = json.loads(request.body.decode('utf-8'))['name']
     sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
 
     alluser = UserProfile.objects.all();
-    currentUser = alluser.get(userName=seachName)
-
-
-
-    return HttpResponse(json.dumps({"success":True, "user-details":{"userName":userName,"emailId":emailID,"currentCity":currentCity,"currentCompany":currentCompany}}),
+    currentUser=[]
+    for user in alluser:
+        if getattr(user, UserProfile.userName)==seachName:
+            currentUser.append(user)
+    return HttpResponse(json.dumps({"success":True, "user-list":currentUser}),
         content_type='application/json')
+#  bonuse requrement ----------------------
+
+@csrf_exempt
+def searchUserByMobileNo(request):
+    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNo']
+    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+    alluser = UserProfile.objects.all();
+    currentUser=None
+    for user in alluser:
+        if (getattr(currentUser, UserProfile.mobileNo)==mobileNo):
+            currentUser=user
+
+    if(currentUser!=None):
+        return HttpResponse(json.dumps({"success":True, "user":currentUser}),
+        content_type='application/json')
+    else:
+        return HttpResponse(json.dumps({"success": False, "user": "null"}),
+                            content_type='application/json')
+
+@csrf_exempt
+def markMobileNoSpam(request):
+    mobileNo = json.loads(request.body.decode('utf-8'))['mobileNo']
+    sessionId = json.loads(request.body.decode('utf-8'))['sessionId']
+    alluser = UserProfile.objects.all();
+    currentUser=None
+    for user in alluser:
+        if (getattr(currentUser, UserProfile.mobileNo)==mobileNo):
+            currentUser=user
+
+    if(currentUser!=None):
+
+        return HttpResponse(json.dumps({"success":True, "user":currentUser}),
+        content_type='application/json')
+    else:
+        return HttpResponse(json.dumps({"success": False, "user": "null"}),
+                            content_type='application/json')
